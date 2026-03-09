@@ -1,100 +1,261 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Spotify Mood Recommender</title>
-  <style>
-    body { font-family: system-ui, Arial; background: #080808; color: #ffef00; margin:0; display:flex; justify-content:center; align-items:center; min-height:100vh; }
-    .card { background:#0f0f0f; padding:22px; border-radius:14px; width:92%; max-width:720px; box-shadow:0 10px 30px rgba(0,0,0,0.6); }
-    h1 { margin:0 0 12px; color:#ffd500; font-size:28px; text-align:center; }
-    .row { display:grid; grid-template-columns: 1fr 1fr auto; gap:10px; align-items:center; }
-    @media(max-width:700px){ .row{ grid-template-columns:1fr; } }
-    input { padding:12px; border-radius:10px; border:2px solid #222; background:#0d0d0d; color:#fff; }
-    button { padding:12px 16px; border-radius:10px; border:none; background:#ffd500; color:#000; font-weight:700; cursor:pointer; }
-    .error { color:#ff6b6b; margin-top:12px; font-weight:700; text-align:center; }
-    .results { margin-top:14px; display:grid; gap:10px; }
-    .song { display:grid; grid-template-columns:64px 1fr auto; gap:10px; background:#111; padding:10px; border-radius:10px; align-items:center; }
-    .thumb { width:64px;height:64px; object-fit:cover;border-radius:8px; background:#222; }
-    .meta { color:#d6d6d6; font-size:13px; }
-    a.open { color:#ffd500; text-decoration:none; font-weight:700; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spotify Mood Recommender</title>
+
+<style>
+
+*{
+box-sizing:border-box;
+}
+
+body{
+font-family:Arial, sans-serif;
+background:#0b0b0b;
+color:white;
+margin:0;
+display:flex;
+justify-content:center;
+align-items:center;
+min-height:100vh;
+padding:20px;
+}
+
+.container{
+background:#111;
+padding:25px;
+border-radius:12px;
+width:100%;
+max-width:900px;
+box-shadow:0 0 20px rgba(0,0,0,0.6);
+}
+
+h1{
+text-align:center;
+color:#1DB954;
+margin-bottom:20px;
+}
+
+/* INPUT AREA */
+
+.controls{
+display:flex;
+gap:10px;
+margin-bottom:15px;
+flex-wrap:wrap;
+}
+
+.controls input{
+flex:1;
+min-width:180px;
+padding:10px;
+border-radius:8px;
+border:1px solid #333;
+background:#1a1a1a;
+color:white;
+}
+
+.controls button{
+padding:10px 18px;
+border:none;
+border-radius:8px;
+background:#1DB954;
+color:white;
+font-weight:bold;
+cursor:pointer;
+}
+
+.controls button:hover{
+background:#1ed760;
+}
+
+/* STATUS */
+
+#error{
+margin-top:10px;
+color:#ff5c5c;
+text-align:center;
+}
+
+#loading{
+display:none;
+text-align:center;
+margin-top:15px;
+}
+
+/* SONG GRID */
+
+.results{
+margin-top:25px;
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+gap:18px;
+}
+
+/* SONG CARD */
+
+.song{
+background:#1a1a1a;
+border-radius:10px;
+padding:12px;
+text-align:center;
+transition:0.2s;
+display:flex;
+flex-direction:column;
+}
+
+.song:hover{
+transform:translateY(-5px);
+background:#222;
+}
+
+/* ALBUM IMAGE */
+
+.song img{
+width:100%;
+height:200px;
+object-fit:cover;
+border-radius:8px;
+margin-bottom:10px;
+}
+
+/* TEXT */
+
+.song-name{
+font-weight:bold;
+margin-bottom:4px;
+}
+
+.artist{
+color:#aaa;
+font-size:14px;
+margin-bottom:6px;
+}
+
+/* SPOTIFY BUTTON */
+
+.open{
+margin-top:auto;
+padding:7px 10px;
+background:#1DB954;
+color:white;
+border-radius:20px;
+text-decoration:none;
+font-size:13px;
+display:inline-block;
+}
+
+audio{
+width:100%;
+margin-top:6px;
+}
+
+</style>
 </head>
+
 <body>
-  <div class="card">
-    <h1> Mood Song Recommender</h1>
 
-    <div class="row">
-      <input id="mood" placeholder="mood (happy, sad, chill...)" />
-      <input id="language" placeholder="language (english, hindi...)" />
-      <button id="go">Get Songs</button>
-    </div>
+<div class="container">
 
-    <div id="error" class="error"></div>
-    <div id="results" class="results"></div>
-  </div>
+<h1>🎧 Mood Song Recommender</h1>
 
-  <script>
-    const $ = id => document.getElementById(id);
-    const go = $('go');
+<div class="controls">
+<input id="mood" placeholder="Mood (happy, sad, chill)">
+<input id="language" placeholder="Language (english, hindi)">
+<button id="searchBtn">Get Songs</button>
+</div>
 
-    async function fetchSongs(mood, language) {
-      const res = await fetch('/get-songs', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ mood, language })
-      });
-      const json = await res.json().catch(() => ({}));
-      return { ok: res.ok, status: res.status, data: json };
-    }
+<div id="loading">Fetching songs...</div>
+<div id="error"></div>
 
-    function renderSongs(data) {
-      const results = $('results');
-      results.innerHTML = '';
-      (data.songs || []).forEach(s => {
-        const div = document.createElement('div');
-        div.className = 'song';
-        div.innerHTML = `
-          <img class="thumb" src="${s.album_art || ''}" alt="">
-          <div>
-            <div style="font-weight:800">${s.name || 'Unknown'}</div>
-            <div class="meta">${s.artists || ''}</div>
-            ${s.preview_url ? `<audio src="${s.preview_url}" controls style="margin-top:8px;width:100%"></audio>` : ''}
-          </div>
-          <div>
-            <a class="open" href="${s.url || '#'}" target="_blank">Open</a>
-          </div>
-        `;
-        results.appendChild(div);
-      });
-    }
+<div id="results" class="results"></div>
 
-    go.addEventListener('click', async () => {
-      $('error').textContent = '';
-      $('results').innerHTML = '';
-      const mood = $('mood').value.trim();
-      const language = $('language').value.trim();
-      if (!mood && !language) { $('error').textContent = 'Enter at least a mood or language.'; return; }
+</div>
 
-      go.disabled = true; go.textContent = 'Loading...';
+<script>
 
-      try {
-        const { ok, status, data } = await fetchSongs(mood, language);
-        if (!ok) {
-          // show server provided error if available
-          $('error').textContent = data && data.error ? data.error : `Server error (status ${status})`;
-        } else {
-          renderSongs(data);
-          if (!data.songs || data.songs.length === 0) {
-            $('error').textContent = 'No tracks found for that mood/language.';
-          }
-        }
-      } catch (e) {
-        $('error').textContent = 'Network or other error: ' + (e.message || e);
-      } finally {
-        go.disabled = false; go.textContent = 'Get Songs';
-      }
-    });
-  </script>
+const moodInput=document.getElementById("mood")
+const languageInput=document.getElementById("language")
+const button=document.getElementById("searchBtn")
+
+const resultsDiv=document.getElementById("results")
+const errorDiv=document.getElementById("error")
+const loadingDiv=document.getElementById("loading")
+
+button.addEventListener("click",async function(){
+
+errorDiv.textContent=""
+resultsDiv.innerHTML=""
+
+const mood=moodInput.value.trim()
+const language=languageInput.value.trim()
+
+if(!mood && !language){
+errorDiv.textContent="Please enter mood or language"
+return
+}
+
+loadingDiv.style.display="block"
+
+try{
+
+const response=await fetch("/get-songs",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({mood:mood,language:language})
+})
+
+const data=await response.json()
+
+loadingDiv.style.display="none"
+
+if(!response.ok){
+errorDiv.textContent=data.error || "Server error"
+return
+}
+
+if(!data.songs || data.songs.length===0){
+errorDiv.textContent="No songs found"
+return
+}
+
+data.songs.forEach(song=>{
+
+const card=document.createElement("div")
+card.className="song"
+
+card.innerHTML=`
+
+<img src="${song.album_art || ""}">
+
+<div class="song-name">${song.name}</div>
+
+<div class="artist">${song.artists}</div>
+
+${song.preview_url ?
+`<audio controls src="${song.preview_url}"></audio>`
+: ""}
+
+<a class="open" href="${song.url}" target="_blank">Open in Spotify</a>
+`
+
+resultsDiv.appendChild(card)
+
+})
+
+}catch(err){
+
+loadingDiv.style.display="none"
+errorDiv.textContent="Network error: "+err.message
+
+}
+
+})
+
+</script>
+
 </body>
 </html>
