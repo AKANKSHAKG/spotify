@@ -1,0 +1,37 @@
+# Environment variables (IMPORTANT)
+
+.env
+
+# Python cache files
+
+**pycache**/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+
+venv/
+.env/
+.venv/
+
+# Mac system files
+
+.DS_Store
+
+# VS Code settings (optional)
+
+.vscode/
+
+# Logs
+
+*.log
+
+# Flask instance folder
+
+instance/
+
+# Build folders
+
+build/
+dist/
