@@ -5,14 +5,19 @@ import random
 import time
 from requests.exceptions import RequestException, ReadTimeout, ConnectionError
 import os
-
+from dotenv import load_dotenv
 app = Flask(__name__)
 
 # ----------------------
 # Spotify API Credentials
 # ----------------------
+load_dotenv()
+
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+
+if not CLIENT_ID or not CLIENT_SECRET:
+    raise ValueError("Spotify credentials not found. Check your .env file.")
 
 auth_manager = SpotifyClientCredentials(
     client_id=CLIENT_ID,
